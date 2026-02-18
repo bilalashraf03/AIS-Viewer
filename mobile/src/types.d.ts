@@ -256,6 +256,7 @@ export interface UseTileSubscriptionReturn {
  */
 export interface VesselMarkerProps {
   vessel: VesselMarker;
+  mapBearing?: number;
 }
 
 /**

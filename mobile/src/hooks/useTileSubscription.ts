@@ -64,7 +64,7 @@ export function useTileSubscription({
 
           if (currentTileKeys.length > 0) {
             console.log(
-              `[useTileSubscription] 🔍 Zoom ${roundedZoom} < ${MIN_ZOOM_FOR_VESSELS}, unsubscribing from ${currentTileKeys.length} tiles`,
+              `[useTileSubscription] Zoom ${roundedZoom} < ${MIN_ZOOM_FOR_VESSELS}, unsubscribing from ${currentTileKeys.length} tiles`,
             );
             wsService.unsubscribe(currentTileKeys);
             currentSubscribedTilesRef.current.clear();
@@ -89,14 +89,10 @@ export function useTileSubscription({
         const visibleTileKeys = visibleTiles.map(tileToKey);
         const newTileSet = new Set(visibleTileKeys);
 
-        console.log(
-          `[useTileSubscription] 📍 ${visibleTiles.length} tiles visible at zoom ${tileZoom}`,
-        );
-
         // Check tile limit
         if (visibleTiles.length > 1500) {
           console.error(
-            `[useTileSubscription] ⚠️ Too many tiles: ${visibleTiles.length}. Please zoom in.`,
+            `[useTileSubscription] Too many tiles: ${visibleTiles.length}. Please zoom in.`,
           );
           Alert.alert(
             "Too Many Tiles",
@@ -120,7 +116,7 @@ export function useTileSubscription({
         // Unsubscribe from old tiles and remove their vessels
         if (tilesToUnsubscribe.length > 0) {
           console.log(
-            `[useTileSubscription] 📍 Unsubscribing from ${tilesToUnsubscribe.length} tiles`,
+            `[useTileSubscription] Unsubscribing from ${tilesToUnsubscribe.length} tiles`,
           );
           wsService.unsubscribe(tilesToUnsubscribe);
           removeVesselsFromTiles(tilesToUnsubscribe);
@@ -132,9 +128,8 @@ export function useTileSubscription({
         // Subscribe to new tiles
         if (tilesToSubscribe.length > 0) {
           console.log(
-            `[useTileSubscription] 📍 Subscribing to ${tilesToSubscribe.length} new tiles`,
+            `[useTileSubscription] Subscribing to ${tilesToSubscribe.length} new tiles`,
           );
-
           // Subscribe via WebSocket
           // Note: WebSocket server automatically sends initial vessel data
           // for subscribed tiles, followed by real-time updates
@@ -147,7 +142,7 @@ export function useTileSubscription({
         setSubscribedTiles(new Set(currentSubscribedTilesRef.current));
 
         console.log(
-          `[useTileSubscription] 📍 Total subscribed tiles: ${currentSubscribedTilesRef.current.size}`,
+          `[useTileSubscription] Total subscribed tiles: ${currentSubscribedTilesRef.current.size}`,
         );
 
         if (!isInitialLoadComplete && tilesToSubscribe.length > 0) {
@@ -203,17 +198,11 @@ export function useTileSubscription({
         const roundedZoom = Math.round(state.properties.zoom * 10) / 10;
         setCurrentZoom(roundedZoom);
         currentZoomRef.current = roundedZoom;
-
-        console.log(`[useTileSubscription] 🔍 Camera zoom ${roundedZoom}`);
-
         // If zoom drops below MIN_ZOOM_FOR_VESSELS, immediately unsubscribe and clear vessels
         if (roundedZoom < MIN_ZOOM_FOR_VESSELS) {
-          console.log(
-            `Unsubscribing because zoom is below ${MIN_ZOOM_FOR_VESSELS}`,
-          );
           if (currentSubscribedTilesRef.current.size > 0) {
             console.log(
-              `[useTileSubscription] 🔍 Camera zoom ${roundedZoom} < ${MIN_ZOOM_FOR_VESSELS}, clearing vessels`,
+              `[useTileSubscription] Zoom ${roundedZoom} < ${MIN_ZOOM_FOR_VESSELS}, clearing vessels`,
             );
             const wsService = getWebSocketService();
             const currentTileKeys = Array.from(
@@ -235,21 +224,17 @@ export function useTileSubscription({
 
   // Initial map load
   const handleMapReady = useCallback(async () => {
-    console.log("[useTileSubscription] 🗺️ Map ready, loading initial tiles");
-
     if (!mapRef.current) return;
 
     setIsLoading(true);
 
     // Trigger initial tile subscription after a short delay to ensure map is ready
     setTimeout(async () => {
-      console.log("[useTileSubscription] 🗺️ Triggering initial subscription");
       try {
         const zoom = await mapRef.current?.getZoom();
         if (zoom !== undefined) {
           await subscribeToViewportTiles(zoom);
         }
-        console.log("[useTileSubscription] 🗺️ Initial subscription complete");
       } catch (error) {
         console.error("[useTileSubscription] Error in initial load:", error);
       }

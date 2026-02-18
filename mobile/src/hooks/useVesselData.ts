@@ -42,7 +42,7 @@ export function useVesselData({
 
     const unsubVessels = wsService.onVesselUpdate((tile, updatedVessels) => {
       console.log(
-        `[useVesselData] 📡 Received ${updatedVessels.length} vessels for tile ${tile}`,
+        `[useVesselData] Received ${updatedVessels.length} vessels for tile ${tile}`,
       );
 
       // Update vessels inline to avoid callback dependency issues
@@ -80,7 +80,7 @@ export function useVesselData({
 
         if (newCount > 0 || updateCount > 0) {
           console.log(
-            `[useVesselData] ✨ ${newCount} new, 🔄 ${updateCount} updated | Total: ${totalVessels}`,
+            `[useVesselData] ${newCount} new, ${updateCount} updated | Total: ${totalVessels}`,
           );
           setVesselCount(totalVessels);
           setLastUpdate(new Date().toLocaleTimeString());
@@ -101,7 +101,7 @@ export function useVesselData({
       if (tilesToRemove.length === 0) return;
 
       console.log(
-        `[useVesselData] 🗑️ Removing vessels from ${tilesToRemove.length} tiles: ${tilesToRemove.join(", ")}`,
+        `[useVesselData] Removing vessels from ${tilesToRemove.length} tiles`,
       );
 
       setVessels((prevVessels) => {
@@ -111,9 +111,6 @@ export function useVesselData({
 
         tilesToRemove.forEach((tile) => {
           const vesselIds = tileToVessels.get(tile);
-          console.log(
-            `[useVesselData] 🗑️ Tile ${tile} has ${vesselIds?.size || 0} vessels`,
-          );
 
           if (vesselIds) {
             totalVesselsInTiles += vesselIds.size;
@@ -127,10 +124,6 @@ export function useVesselData({
                 if (vesselTiles.size === 0) {
                   vesselsToRemove.add(mmsi);
                   vesselToTiles.delete(mmsi);
-                } else {
-                  console.log(
-                    `[useVesselData] 🗑️ Vessel ${mmsi} still in ${vesselTiles.size} other tiles`,
-                  );
                 }
               }
             });
@@ -145,10 +138,6 @@ export function useVesselData({
 
         const remainingVessels = newVessels.size;
 
-        console.log(
-          `[useVesselData] 🗑️ Processed ${totalVesselsInTiles} vessels in tiles, removed ${vesselsToRemove.size} vessels | Remaining: ${remainingVessels}`,
-        );
-
         if (vesselsToRemove.size > 0 || totalVesselsInTiles > 0) {
           setVesselCount(remainingVessels);
           setLastUpdate(new Date().toLocaleTimeString());
@@ -162,15 +151,12 @@ export function useVesselData({
 
   // Clear all vessels
   const clearAllVessels = useCallback(() => {
-    console.log(
-      `[useVesselData] 🗑️ Clearing all vessels - Current count: ${vessels.size}, Tracking: ${vesselToTiles.size} vessels, ${tileToVessels.size} tiles`,
-    );
+    console.log("[useVesselData] Clearing all vessels");
     setVessels(new Map());
     vesselToTiles.clear();
     tileToVessels.clear();
     setVesselCount(0);
     setLastUpdate("Never");
-    console.log("[useVesselData] ✅ All vessels cleared");
   }, [vesselToTiles, tileToVessels, vessels.size]);
 
   return {

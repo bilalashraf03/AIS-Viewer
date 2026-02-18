@@ -26,17 +26,8 @@ export function useMapServices({
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    console.log("[useMapServices] Initializing services...");
-    console.log(`[useMapServices] API URL: ${apiBaseUrl}`);
-    console.log(`[useMapServices] WebSocket URL: ${wsUrl}`);
-    console.log(`[useMapServices] Tile Zoom: ${tileZoom}`);
-
     // Set Mapbox token
-    console.log(
-      `[useMapServices] Setting Mapbox token: ${mapboxToken ? `${mapboxToken.substring(0, 10)}...` : "MISSING"}`,
-    );
     MapboxGL.setAccessToken(mapboxToken);
-    console.log("[useMapServices] ✅ Mapbox token set");
 
     // Initialize WebSocket service
     const wsService = initWebSocketService(wsUrl);
@@ -45,14 +36,10 @@ export function useMapServices({
     wsService
       .connect()
       .then(() => {
-        console.log("[useMapServices] ✅ WebSocket connected successfully");
         setIsInitialized(true);
       })
       .catch((error) => {
-        console.error(
-          "[useMapServices] ❌ WebSocket connection failed:",
-          error,
-        );
+        console.error("[useMapServices] WebSocket connection failed:", error);
         Alert.alert(
           "Connection Error",
           "Failed to connect to vessel tracking server. Please check your backend configuration.",
@@ -75,7 +62,6 @@ export function useMapServices({
 
     // Listen to connection changes
     const unsubConnection = wsService.onConnectionChange((connected) => {
-      console.log("[useMapServices] Connection status changed:", connected);
       setIsConnected(connected);
       onConnectionChange?.(connected);
     });
@@ -87,7 +73,6 @@ export function useMapServices({
 
     // Cleanup
     return () => {
-      console.log("[useMapServices] Cleaning up...");
       unsubConnection();
       unsubError();
       wsService.disconnect();

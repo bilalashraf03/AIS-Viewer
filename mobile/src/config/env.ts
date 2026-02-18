@@ -47,10 +47,10 @@ const validateConfig = () => {
   }
 
   if (errors.length > 0) {
-    console.error("❌ Configuration errors:");
+    console.error("Configuration errors:");
     errors.forEach((error) => console.error(`  - ${error}`));
     console.error(
-      "\n💡 Make sure you have a .env file with all required variables.",
+      "\nMake sure you have a .env file with all required variables.",
     );
   }
 

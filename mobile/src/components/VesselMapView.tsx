@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from "react";
+import React, { useRef, useCallback, useState } from "react";
 import { StyleSheet, View, Alert } from "react-native";
 import { MapView, Camera, StyleURL } from "@rnmapbox/maps";
 import { getWebSocketService } from "../services/websocket";
@@ -24,6 +24,7 @@ export default function VesselMapView({
 }: VesselMapViewProps) {
   const mapRef = useRef<MapView>(null);
   const cameraRef = useRef<Camera>(null);
+  const [mapBearing, setMapBearing] = useState(0);
 
   // Initialize services (Mapbox, API, WebSocket)
   const { isConnected } = useMapServices({
@@ -62,6 +63,16 @@ export default function VesselMapView({
     clearAllVessels,
   });
 
+  // Handle camera change to track map bearing
+  const handleCameraChangedWithBearing = useCallback(
+    (state: any) => {
+      handleCameraChanged(state);
+      // In @rnmapbox/maps, the map rotation is stored as "heading"
+      setMapBearing(state?.properties?.heading || 0);
+    },
+    [handleCameraChanged],
+  );
+
   // Handle reconnect button press
   const handleReconnect = () => {
     const wsService = getWebSocketService();
@@ -83,7 +94,7 @@ export default function VesselMapView({
     const validVessels = vesselArray.filter((v) => v && v.lat && v.lon);
 
     return validVessels.map((vessel) => (
-      <VesselMarker key={vessel.id} vessel={vessel} />
+      <VesselMarker key={vessel.id} vessel={vessel} mapBearing={mapBearing} />
     ));
   };
 
@@ -96,9 +107,9 @@ export default function VesselMapView({
         onRegionDidChange={handleRegionDidChange}
         onDidFinishLoadingMap={handleMapReady}
         onMapLoadingError={() => {
-          console.error("[VesselMapView] ❌ Map failed to load");
+          console.error("[VesselMapView] Map failed to load");
         }}
-        onCameraChanged={handleCameraChanged}
+        onCameraChanged={handleCameraChangedWithBearing}
         compassEnabled={true}
         logoEnabled={false}
         attributionEnabled={false}

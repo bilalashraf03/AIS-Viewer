@@ -45,13 +45,11 @@ export class WebSocketService {
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        console.log("[WebSocket] Connecting to:", this.url);
         this.isIntentionalDisconnect = false;
 
         this.ws = new WebSocket(this.url);
 
         this.ws.onopen = () => {
-          console.log("[WebSocket] Connected");
           this.reconnectAttempts = 0;
           this.notifyConnectionHandlers(true);
           this.startPingInterval();
@@ -70,7 +68,6 @@ export class WebSocketService {
         };
 
         this.ws.onclose = (event) => {
-          console.log("[WebSocket] Closed:", event.code, event.reason);
           this.cleanup();
           this.notifyConnectionHandlers(false);
 
@@ -90,7 +87,6 @@ export class WebSocketService {
    * Disconnect from WebSocket server
    */
   disconnect(): void {
-    console.log("[WebSocket] Disconnecting");
     this.isIntentionalDisconnect = true;
 
     if (this.reconnectTimeout) {
@@ -117,7 +113,7 @@ export class WebSocketService {
       return;
     }
 
-    console.log("[WebSocket] Subscribing to tiles:", tiles);
+    console.log(`[WebSocket] Subscribing to ${tiles.length} tiles`);
 
     tiles.forEach((tile) => this.subscribedTiles.add(tile));
 
@@ -136,7 +132,7 @@ export class WebSocketService {
       return;
     }
 
-    console.log("[WebSocket] Unsubscribing from tiles:", tiles);
+    console.log(`[WebSocket] Unsubscribing from ${tiles.length} tiles`);
 
     tiles.forEach((tile) => this.subscribedTiles.delete(tile));
 
@@ -205,22 +201,18 @@ export class WebSocketService {
 
       switch (message.type) {
         case "connected":
-          console.log("[WebSocket] Server message:", message.message);
+          console.log("[WebSocket] Connected:", message.message);
           break;
 
         case "subscribed":
           console.log(
-            "[WebSocket] Subscribed to:",
-            message.tiles.length,
-            "tiles",
+            `[WebSocket] Subscribed to ${message.tiles.length} tiles`,
           );
           break;
 
         case "unsubscribed":
           console.log(
-            "[WebSocket] Unsubscribed from:",
-            message.tiles.length,
-            "tiles",
+            `[WebSocket] Unsubscribed from ${message.tiles.length} tiles`,
           );
           break;
 
@@ -233,10 +225,7 @@ export class WebSocketService {
           break;
 
         default:
-          console.warn(
-            "[WebSocket] Unknown message type:",
-            (message as any).type,
-          );
+        // Unknown message type, ignore
       }
     } catch (error) {
       console.error("[WebSocket] Failed to parse message:", error);
@@ -248,7 +237,6 @@ export class WebSocketService {
    */
   private send(message: any): void {
     if (!this.isConnected()) {
-      console.warn("[WebSocket] Cannot send, not connected");
       return;
     }
 
@@ -282,12 +270,10 @@ export class WebSocketService {
 
       this.connect()
         .then(() => {
-          console.log("[WebSocket] Reconnected successfully");
-
           // Resubscribe to previously subscribed tiles
           if (this.subscribedTiles.size > 0) {
             const tiles = Array.from(this.subscribedTiles);
-            console.log("[WebSocket] Resubscribing to", tiles.length, "tiles");
+
             this.subscribedTiles.clear(); // Clear before resubscribing
             this.subscribe(tiles);
           }
