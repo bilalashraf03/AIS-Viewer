@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
 import MapboxGL from "@rnmapbox/maps";
-import { initAPIService } from "../services/api";
 import {
   initWebSocketService,
   getWebSocketService,
@@ -38,9 +37,6 @@ export function useMapServices({
     );
     MapboxGL.setAccessToken(mapboxToken);
     console.log("[useMapServices] ✅ Mapbox token set");
-
-    // Initialize API service
-    initAPIService(apiBaseUrl);
 
     // Initialize WebSocket service
     const wsService = initWebSocketService(wsUrl);
