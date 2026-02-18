@@ -23,6 +23,9 @@ export const TILE_ZOOM = parseInt(
   10,
 );
 
+// Minimum zoom level to load vessels
+export const MIN_ZOOM_FOR_VESSELS = 12;
+
 // Default Map Center
 export const MAP_CENTER_LON = parseFloat(
   process.env.EXPO_PUBLIC_MAP_CENTER_LON || "114.1095",
@@ -75,6 +78,7 @@ export const config: AppConfig = {
   },
   map: {
     tileZoom: TILE_ZOOM,
+    minZoomForVessels: MIN_ZOOM_FOR_VESSELS,
     center: {
       lon: MAP_CENTER_LON,
       lat: MAP_CENTER_LAT,

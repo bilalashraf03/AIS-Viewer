@@ -188,13 +188,6 @@ export interface InfoPanelProps {
   isLoading: boolean;
 }
 
-/**
- * Props for Legend component
- */
-export interface LegendProps {
-  // Currently no props needed, but keeping for future extensibility
-}
-
 // ============================================================================
 // Configuration Types
 // ============================================================================
@@ -212,6 +205,7 @@ export interface AppConfig {
   };
   map: {
     tileZoom: number;
+    minZoomForVessels: number;
     center: {
       lon: number;
       lat: number;
@@ -240,8 +234,8 @@ export interface UseVesselDataReturn {
   vesselCount: number;
   lastUpdate: string;
   isLoading: boolean;
-  updateVesselsFromWebSocket: (vessels: VesselPosition[]) => void;
-  loadInitialVesselsForTiles: (tiles: TileCoordinates[]) => Promise<void>;
+  removeVesselsFromTiles: (tiles: string[]) => void;
+  clearAllVessels: () => void;
 }
 
 /**
@@ -251,7 +245,7 @@ export interface UseTileSubscriptionReturn {
   subscribedTiles: Set<string>;
   subscribeToViewportTiles: () => Promise<void>;
   handleRegionDidChange: () => Promise<void>;
-  handleRegionWillChange: () => void;
+  handleCameraChanged: (state: any) => void;
   handleMapReady: () => void;
   currentZoom: number;
   isLoading: boolean;
