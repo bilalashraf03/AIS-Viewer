@@ -1,8 +1,20 @@
 import express, { Application, Request, Response, NextFunction } from "express";
-import { logger } from "./utils/logger";
+
 import { createServer, Server as HTTPServer } from "http";
 import { config } from "./config";
+import { logger } from "./utils/logger";
 import { healthRouter } from "./routes/health";
+import { initRedis, closeRedis } from "./services/redis";
+import { initPostgres, closePostgres } from "./services/postgres";
+import { startBatchSync, stopBatchSync } from "./services/batch-sync";
+import {
+  initAISStreamClient,
+  stopAISStreamClient,
+} from "./services/aisstream-client";
+import {
+  initWebSocketServer,
+  stopWebSocketServer,
+} from "./services/websocket-server";
 
 class Server {
   private app: Application;
@@ -73,8 +85,29 @@ class Server {
 
   public async start(): Promise<void> {
     try {
+      // Initialize Redis connection
+      logger.info("Initializing Redis connection...");
+      await initRedis();
+
+      // Initialize PostgreSQL connection
+      logger.info("Initializing PostgreSQL connection...");
+      await initPostgres();
+
+      // Initialize AISStream client
+      logger.info("Initializing AISStream client...");
+      await initAISStreamClient();
+
+      // Start batch sync service
+      logger.info("Starting batch sync service...");
+      await startBatchSync();
+
       // Create HTTP server
       this.httpServer = createServer(this.app);
+
+      // Initialize WebSocket server
+      logger.info("Initializing WebSocket server...");
+      await initWebSocketServer(this.httpServer, "/ws");
+
       // Start HTTP server
       this.httpServer.listen(config.port, () => {
         logger.info(
@@ -106,6 +139,21 @@ class Server {
         logger.info("Shutting down services...");
 
         try {
+          // Stop WebSocket server
+          await stopWebSocketServer();
+
+          // Stop AISStream client
+          await stopAISStreamClient();
+
+          // Stop batch sync service
+          await stopBatchSync();
+
+          // Close Redis connection
+          await closeRedis();
+
+          // Close PostgreSQL connection
+          await closePostgres();
+
           // Close HTTP server
           if (this.httpServer) {
             await new Promise<void>((resolve) => {
