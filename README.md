@@ -25,6 +25,8 @@ A real-time vessel tracking system using AIS (Automatic Identification System) d
 - **Connection Status**: Visual indicators for connectivity
 - **Cross-platform**: Works on iOS and Android via React Native/Expo
 
+👉 **See [Mobile README](./mobile/README.md) for detailed setup and documentation**
+
 ## 📋 Prerequisites
 
 - **Docker & Docker Compose**: For running backend services
@@ -72,54 +74,19 @@ A real-time vessel tracking system using AIS (Automatic Identification System) d
 
 ## 🔄 End-to-End Data Flow
 
-The following diagram shows the complete data flow from AISStream.io to the mobile client, with typical latency measurements for each stage:
-
 ```
-[AISStream Provider]
-        |
-        |  (1) Network delivery -> Backend (variable; e.g. 10-200 ms)
-        v
-[AISStreamClient (ws)]
-  - handleMessage()
-  - parsePositionReport()  <-- tile calc (latLonToTileKey)
-        |
-        |  (2) Parse + tile calc: ~<1 ms
-        v
-  updateVesselPosition()
-  - redis.evalsha(UPDATE_VESSEL_SCRIPT)
-        |
-        |  (3) Redis write (atomic Lua): ~1-5 ms
-        v
-  mark dirty tiles in local set
-  (dirtyTiles maintained per AISStreamClient)
-        |
-        |  (4) AISStreamClient batching interval:
-        |      configured = 1000 ms => avg wait ~500 ms
-        v
-  emit("dirtyTiles", tiles) ---------------------------
-        |                                              |
-        v                                              |
-[WebSocket Server] <-----------------------------------/
-  - receives vesselUpdate events (also listens to dirtyTiles)
-  - dirtyTiles.add(tile)
-  - flushDirtyTiles() runs periodically (500 ms)
-        |
-        |  (5) WS flush interval: configured = 500 ms
-        |      avg wait ~250 ms
-        v
-  For each dirty tile:
-    - redis.smembers(cur:tile:{tile})         (~1-5 ms)
-    - pipeline.hgetall for each mmsi          (~1-N*ms, depends on vessels)
-        |
-        |  (6) Redis reads + pipeline: ~2-20+ ms (tile size dependent)
-        v
-  send JSON over WebSocket to subscribed clients
-        |
-        |  (7) WS send -> client network: ~5-100+ ms (client dependent)
-        v
-[Client receives vessel_update]
+[AISStream.io] 
+    ↓ (1) Network delivery (10-200ms)
+[AISStream Client]
+    ↓ (2) Parse + tile calc (<1ms)
+    ↓ (3) Redis write (1-5ms)
+    ↓ (4) Batching wait (~500ms avg)
+[WebSocket Server]
+    ↓ (5) Flush interval (~250ms avg)
+    ↓ (6) Redis read pipeline (2-20ms)
+    ↓ (7) Send to client (5-100ms)
+[Mobile Client]
 ```
-
 **Typical End-to-End Latency**: ~770ms - 1.4s from AISStream to client display
 
 **Latency Breakdown:**
@@ -191,46 +158,11 @@ See the [Mobile README](./mobile/README.md) for detailed setup instructions.
 
 ## 🛠️ Backend Development
 
-### Project Structure
+### Key Components
 
-```
-server/
-├── src/
-│   ├── config/          # Configuration management
-│   ├── routes/          # Express routes
-│   ├── services/        # Core business logic
-│   │   ├── aisstream-client.ts    # AISStream WebSocket client
-│   │   ├── batch-sync.ts          # Redis → PostgreSQL sync
-│   │   ├── postgres.ts            # Database operations
-│   │   ├── redis.ts               # Cache operations
-│   │   └── websocket-server.ts   # Client WebSocket server
-│   ├── types/           # TypeScript type definitions
-│   ├── utils/           # Helper functions
-│   └── index.ts         # Application entry point
-├── Dockerfile           # Production Docker image
-├── Dockerfile.dev       # Development Docker image
-└── package.json
-```
-
-### Key Services
-
-#### AISStream Client
-Connects to AISStream.io and receives real-time vessel positions:
-- Filters vessels by bounding box (optional)
-- Calculates tile coordinates (zoom 12)
-- Updates Redis cache with vessel data
-
-#### Batch Sync Service
-Periodically syncs Redis cache to PostgreSQL:
-- Runs every 5 seconds (configurable)
-- Bulk inserts/updates for efficiency
-- Uses PostGIS for spatial indexing
-
-#### WebSocket Server
-Pushes real-time updates to connected clients:
-- Tile-based subscriptions
-- Client connection management
-- Automatic cleanup on disconnect
+- **AISStream Client**: Receives live vessel positions, calculates tile coordinates, updates Redis
+- **Batch Sync Service**: Syncs Redis → PostgreSQL every 5 seconds with bulk operations
+- **WebSocket Server**: Manages client connections and tile-based subscriptions
 
 ### Environment Variables
 
@@ -250,23 +182,14 @@ Pushes real-time updates to connected clients:
 
 ### Health Check Endpoints
 
-The backend exposes health check endpoints for monitoring:
+- `GET /` - Root endpoint with API info
+- `GET /health` - Basic health check
+- `GET /health/ready` - Readiness check (includes database connectivity)
+- `GET /health/live` - Liveness probe for orchestration
 
-#### GET /
-Root endpoint with API information
+**Note**: Vessel data is delivered exclusively via WebSocket. No REST endpoints for vessel retrieval.
 
-#### GET /health
-Basic health check
-
-#### GET /health/ready
-Comprehensive readiness check (includes database connectivity)
-
-#### GET /health/live
-Liveness probe for container orchestration
-
-**Note**: The system uses WebSocket exclusively for real-time vessel data delivery. There are no REST endpoints for vessel data retrieval.
-
-### Docker Commands
+### Useful Commands
 
 ```bash
 # View logs
@@ -287,92 +210,11 @@ docker exec -it ais-postgres psql -U aisuser -d aisviewer
 docker exec -it ais-redis redis-cli
 ```
 
-### Local Development (Without Docker)
-
-```bash
-cd server
-
-# Install dependencies
-npm install
-
-# Create .env file with required variables
-cp .env.example .env
-
-# Start PostgreSQL and Redis (or use Docker for just these)
-docker compose up -d postgres redis
-
-# Run in development mode
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
-```
-
-## 📊 Database Schema
-
-### vessels_current Table
-
-| Column | Type | Description |
-|--------|------|-------------|
-| mmsi | BIGINT | Vessel identifier (Primary Key) |
-| geom | geometry(Point, 4326) | PostGIS point geometry |
-| tile_z12 | INT | Tile coordinate at zoom 12 |
-| lon | DOUBLE PRECISION | Longitude |
-| lat | DOUBLE PRECISION | Latitude |
-| cog | DOUBLE PRECISION | Course over ground |
-| sog | DOUBLE PRECISION | Speed over ground |
-| heading | INT | Vessel heading (0-359) |
-| updated_at | TIMESTAMPTZ | Last update timestamp |
-| created_at | TIMESTAMPTZ | First seen timestamp |
-
-**Indexes:**
-- `idx_vessels_current_tile_fresh`: Composite index on (tile_z12, updated_at)
-- `idx_vessels_current_geom`: GIST spatial index on geometry
-
 ## 🔧 Troubleshooting
 
-### Backend won't start
-- Ensure Docker is running
-- Check if ports 5432, 6379, 3002 are available
-- Verify AISSTREAM_API_KEY is set in .env
-
-### No vessel data appearing
-- Verify AISStream.io API key is valid
-- Check backend logs: `docker logs -f ais-backend-dev`
-- Ensure vessels are in your bounding box (if set)
-
-### Database connection issues
-- Check PostgreSQL is healthy: `docker ps`
-- Verify credentials in docker-compose.yml match config
-- Check logs: `docker logs ais-postgres`
-
-### Redis connection issues
-- Verify Redis is running: `docker ps`
-- Check Redis logs: `docker logs ais-redis`
-- Test connection: `docker exec -it ais-redis redis-cli ping`
-
-## 📝 Scripts
-
-- `./start.sh [dev|prod]` - Start all services
-- `./stop.sh [dev|prod]` - Stop all services
-
-## 🧪 Testing
-
-```bash
-cd server
-
-# Run all tests
-npm test
-
-# Test AISStream connection
-npm run test:aisstream
-
-# Test batch sync parameters
-npm run test:batch-params
-```
+- **Backend won't start**: Ensure Docker is running, ports 5432/6379/3002 are available, AISSTREAM_API_KEY is set
+- **No vessel data**: Verify AISStream.io API key is valid, check backend logs: `docker logs -f ais-backend-dev`
+- **Connection issues**: Check service health with `docker ps`, view logs with `docker logs <container-name>`
 
 ## 📦 Technology Stack
 
