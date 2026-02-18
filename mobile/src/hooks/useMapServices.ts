@@ -1,13 +1,3 @@
-/**
- * useMapServices Hook
- *
- * Manages service initialization for the map:
- * - Mapbox token setup
- * - API service initialization
- * - WebSocket service initialization and connection
- * - Connection state management
- */
-
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
 import MapboxGL from "@rnmapbox/maps";
@@ -43,7 +33,11 @@ export function useMapServices({
     console.log(`[useMapServices] Tile Zoom: ${tileZoom}`);
 
     // Set Mapbox token
+    console.log(
+      `[useMapServices] Setting Mapbox token: ${mapboxToken ? `${mapboxToken.substring(0, 10)}...` : "MISSING"}`,
+    );
     MapboxGL.setAccessToken(mapboxToken);
+    console.log("[useMapServices] ✅ Mapbox token set");
 
     // Initialize API service
     initAPIService(apiBaseUrl);
@@ -59,7 +53,10 @@ export function useMapServices({
         setIsInitialized(true);
       })
       .catch((error) => {
-        console.error("[useMapServices] ❌ WebSocket connection failed:", error);
+        console.error(
+          "[useMapServices] ❌ WebSocket connection failed:",
+          error,
+        );
         Alert.alert(
           "Connection Error",
           "Failed to connect to vessel tracking server. Please check your backend configuration.",

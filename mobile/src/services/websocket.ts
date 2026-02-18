@@ -1,14 +1,3 @@
-/**
- * WebSocket Service for Real-time Vessel Updates
- *
- * Features:
- * - Connect/disconnect to WebSocket server
- * - Subscribe/unsubscribe to tiles
- * - Receive vessel updates
- * - Automatic reconnection
- * - Event-based updates
- */
-
 import type {
   VesselPosition,
   ConnectedMessage,
