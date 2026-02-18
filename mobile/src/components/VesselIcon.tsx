@@ -12,17 +12,41 @@ export default function VesselIcon({
   height = 24,
   color = "#22c55e",
 }: VesselIconProps) {
+  // Calculate proportional sizes based on 24x24 reference
+  const scale = width / 24;
+  const bodyWidth = 6 * scale; // Wider for better visibility
+  const bodyHeight = 15 * scale; // From y=3 to y=18
+  const arrowHeadSize = 3 * scale; // Arrow head width (left/right)
+  const arrowHeadHeight = 6 * scale; // Arrow head height for visibility
+
   return (
     <View style={[styles.container, { width, height }]}>
-      {/* Arrow body */}
+      {/* Arrow head (triangle) */}
+      <View
+        style={[
+          styles.arrowHead,
+          {
+            borderLeftWidth: arrowHeadSize,
+            borderRightWidth: arrowHeadSize,
+            borderBottomWidth: arrowHeadHeight,
+            borderBottomColor: color,
+            top: 3 * scale,
+          },
+        ]}
+      />
+
+      {/* Arrow body (vertical line) */}
       <View
         style={[
           styles.arrowBody,
-          { backgroundColor: color, height: height * 0.625, width: 3 },
+          {
+            width: bodyWidth,
+            height: bodyHeight,
+            backgroundColor: color,
+            top: (1 + arrowHeadHeight) * scale,
+          },
         ]}
       />
-      {/* Arrow head */}
-      <View style={[styles.arrowHead, { borderBottomColor: color }]} />
     </View>
   );
 }
@@ -34,24 +58,20 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   arrowBody: {
+    position: "absolute",
     borderRadius: 1.5,
-    marginTop: 6,
   },
   arrowHead: {
+    position: "absolute",
     width: 0,
     height: 0,
     backgroundColor: "transparent",
     borderStyle: "solid",
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
-    borderLeftWidth: 6,
-    borderRightWidth: 6,
-    borderBottomWidth: 8,
-    position: "absolute",
-    top: 0,
   },
 });
