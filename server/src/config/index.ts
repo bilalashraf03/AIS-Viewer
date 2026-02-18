@@ -29,8 +29,8 @@ interface Config {
 
   // Application Settings
   tileZoom: number;
-  freshnessSeconds: number;
-  vesselTtlSeconds: number;
+  flushDirtyTilesSeconds: number;
+  vesselRedisTtlSeconds: number;
 
   // Batch Sync
   batchSyncIntervalMs: number;
@@ -93,8 +93,8 @@ export const config: Config = {
 
   // Application Settings
   tileZoom: getEnvVarNumber("TILE_ZOOM", 12),
-  freshnessSeconds: getEnvVarNumber("FRESHNESS_SECONDS", 120),
-  vesselTtlSeconds: getEnvVarNumber("VESSEL_TTL_SECONDS", 120),
+  flushDirtyTilesSeconds: getEnvVarNumber("FRESHNESS_SECONDS", 1),
+  vesselRedisTtlSeconds: getEnvVarNumber("VESSEL_TTL_SECONDS", 120),
 
   // Batch Sync
   batchSyncIntervalMs: getEnvVarNumber("BATCH_SYNC_INTERVAL_MS", 5000),
