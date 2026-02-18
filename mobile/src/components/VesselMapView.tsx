@@ -1,25 +1,14 @@
-/**
- * VesselMapView Component
- *
- * Main map component that orchestrates:
- * - Service initialization via useMapServices hook
- * - Vessel data management via useVesselData hook
- * - Tile subscription via useTileSubscription hook
- * - Map rendering with vessel markers
- * - UI overlays (InfoPanel, Legend, ReconnectButton)
- */
-
-import React, { useRef } from "react";
+import React, { useRef, useCallback } from "react";
 import { StyleSheet, View, Alert } from "react-native";
-import MapboxGL from "@rnmapbox/maps";
+import { MapView, Camera, StyleURL } from "@rnmapbox/maps";
 import { getWebSocketService } from "../services/websocket";
+import { MIN_ZOOM_FOR_VESSELS } from "../config/env";
 import { useMapServices } from "../hooks/useMapServices";
 import { useVesselData } from "../hooks/useVesselData";
 import { useTileSubscription } from "../hooks/useTileSubscription";
 import InfoPanel from "./InfoPanel";
-import Legend from "./Legend";
-import VesselMarker from "./VesselMarker";
 import ReconnectButton from "./ReconnectButton";
+import VesselMarker from "./VesselMarker";
 import type { VesselMapViewProps } from "../types";
 
 export default function VesselMapView({
@@ -33,8 +22,8 @@ export default function VesselMapView({
   onConnectionChange,
   onLastUpdateChange,
 }: VesselMapViewProps) {
-  const mapRef = useRef<MapboxGL.MapView>(null);
-  const cameraRef = useRef<MapboxGL.Camera>(null);
+  const mapRef = useRef<MapView>(null);
+  const cameraRef = useRef<Camera>(null);
 
   // Initialize services (Mapbox, API, WebSocket)
   const { isConnected } = useMapServices({
@@ -46,17 +35,22 @@ export default function VesselMapView({
   });
 
   // Manage vessel data
-  const { vessels, vesselCount, lastUpdate, loadInitialVesselsForTiles } =
-    useVesselData({
-      onVesselCountChange,
-      onLastUpdateChange,
-    });
+  const {
+    vessels,
+    vesselCount,
+    lastUpdate,
+    removeVesselsFromTiles,
+    clearAllVessels,
+  } = useVesselData({
+    onVesselCountChange,
+    onLastUpdateChange,
+  });
 
   // Manage tile subscriptions and map interactions
   const {
     subscribedTiles,
     handleRegionDidChange,
-    handleRegionWillChange,
+    handleCameraChanged,
     handleMapReady,
     currentZoom,
     isLoading,
@@ -64,7 +58,8 @@ export default function VesselMapView({
     tileZoom,
     initialZoom,
     mapRef,
-    loadInitialVesselsForTiles,
+    removeVesselsFromTiles,
+    clearAllVessels,
   });
 
   // Handle reconnect button press
@@ -77,36 +72,47 @@ export default function VesselMapView({
     });
   };
 
-  // Render all vessel markers
+  // Render vessel markers
   const renderVessels = () => {
-    return Array.from(vessels.values()).map((vessel) => (
+    // Don't render vessels if zoom level is below MIN_ZOOM_FOR_VESSELS
+    if (currentZoom < MIN_ZOOM_FOR_VESSELS) {
+      return null;
+    }
+
+    const vesselArray = Array.from(vessels.values());
+    const validVessels = vesselArray.filter((v) => v && v.lat && v.lon);
+
+    return validVessels.map((vessel) => (
       <VesselMarker key={vessel.id} vessel={vessel} />
     ));
   };
 
   return (
     <View style={styles.container}>
-      <MapboxGL.MapView
+      <MapView
         ref={mapRef}
         style={styles.map}
-        styleURL={MapboxGL.StyleURL.Dark}
+        styleURL={StyleURL.Dark}
         onRegionDidChange={handleRegionDidChange}
-        onRegionWillChange={handleRegionWillChange}
         onDidFinishLoadingMap={handleMapReady}
+        onMapLoadingError={() => {
+          console.error("[VesselMapView] ❌ Map failed to load");
+        }}
+        onCameraChanged={handleCameraChanged}
         compassEnabled={true}
         logoEnabled={false}
         attributionEnabled={false}
       >
-        <MapboxGL.Camera
+        <Camera
           ref={cameraRef}
           zoomLevel={initialZoom}
           centerCoordinate={initialCenter}
-          animationMode="flyTo"
-          animationDuration={1000}
+          animationDuration={0}
         />
 
+        {/* Render individual vessel markers */}
         {renderVessels()}
-      </MapboxGL.MapView>
+      </MapView>
 
       {/* Info Panel */}
       <InfoPanel
@@ -117,9 +123,6 @@ export default function VesselMapView({
         subscribedTiles={subscribedTiles.size}
         isLoading={isLoading}
       />
-
-      {/* Legend */}
-      <Legend />
 
       {/* Reconnect Button (shown when disconnected) */}
       {!isConnected && !isLoading && (

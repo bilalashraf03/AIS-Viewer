@@ -1,10 +1,3 @@
-/**
- * Environment Configuration
- *
- * Loads and validates environment variables.
- * All environment variables for Expo must be prefixed with EXPO_PUBLIC_
- */
-
 import type { AppConfig } from "../types";
 
 // Mapbox Configuration
