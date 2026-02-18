@@ -1,10 +1,3 @@
-/**
- * VesselIcon Component
- *
- * Simple arrow icon using React Native Views and CSS transforms
- * Compatible with MapboxGL PointAnnotations
- */
-
 import React from "react";
 import { View, StyleSheet } from "react-native";
 

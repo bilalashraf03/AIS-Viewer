@@ -1,12 +1,3 @@
-/**
- * ReconnectButton Component
- *
- * Displays a reconnect button when the WebSocket connection is lost.
- * - Positioned at the bottom center of the screen
- * - Styled with shadow and rounded corners
- * - Calls onReconnect callback when pressed
- */
-
 import React from "react";
 import { StyleSheet, TouchableOpacity, Text } from "react-native";
 import type { ReconnectButtonProps } from "../types";
@@ -14,7 +5,7 @@ import type { ReconnectButtonProps } from "../types";
 export default function ReconnectButton({ onReconnect }: ReconnectButtonProps) {
   return (
     <TouchableOpacity style={styles.button} onPress={onReconnect}>
-      <Text style={styles.text}>🔄 Reconnect</Text>
+      <Text style={styles.text}>Reconnect</Text>
     </TouchableOpacity>
   );
 }

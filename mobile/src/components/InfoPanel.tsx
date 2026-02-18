@@ -1,17 +1,6 @@
-/**
- * InfoPanel Component
- *
- * Displays real-time information about the vessel tracking system:
- * - Connection status
- * - Vessel count
- * - Last update timestamp
- * - Current zoom level
- * - Number of subscribed tiles
- * - Loading indicator
- */
-
 import React from "react";
 import { StyleSheet, View, Text, ActivityIndicator } from "react-native";
+import { MIN_ZOOM_FOR_VESSELS } from "../config/env";
 import type { InfoPanelProps } from "../types";
 
 export default function InfoPanel({
@@ -24,8 +13,6 @@ export default function InfoPanel({
 }: InfoPanelProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🚢 AIS Viewer</Text>
-
       <View style={styles.statusRow}>
         <View
           style={[
@@ -34,23 +21,25 @@ export default function InfoPanel({
           ]}
         />
         <Text style={styles.statusText}>
-          {isConnected ? "Connected" : "Disconnected"}
+          {`Vessels: ${vesselCount}, Tiles: ${subscribedTiles} 🔍 ${currentZoom.toFixed(1)}`}
         </Text>
       </View>
-
-      <Text style={styles.infoText}>Vessels: {vesselCount}</Text>
       <Text style={styles.infoText}>Last Update: {lastUpdate}</Text>
-      <Text style={styles.infoText}>Zoom: {currentZoom.toFixed(1)}</Text>
-      <Text style={styles.infoTextSmall}>Tiles: {subscribedTiles}</Text>
 
-      {isLoading && (
+      {currentZoom < MIN_ZOOM_FOR_VESSELS && (
+        <View style={styles.warningContainer}>
+          <Text style={styles.warningText}>
+            ⚠️ Zoom (to {MIN_ZOOM_FOR_VESSELS}) in to load vessels
+          </Text>
+        </View>
+      )}
+
+      {isLoading && currentZoom >= MIN_ZOOM_FOR_VESSELS && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color="#3b82f6" />
           <Text style={styles.loadingText}>Loading vessels...</Text>
         </View>
       )}
-
-      <Text style={styles.infoHint}>💡 Real-time updates via WebSocket</Text>
     </View>
   );
 }
@@ -58,23 +47,18 @@ export default function InfoPanel({
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    top: 50,
+    bottom: 25,
     left: 10,
+    right: 10,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     padding: 15,
     borderRadius: 10,
-    minWidth: 180,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
+    opacity: 0.9,
     shadowRadius: 3.84,
     elevation: 5,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#1a1a2e",
-    marginBottom: 10,
   },
   statusRow: {
     flexDirection: "row",
@@ -102,11 +86,6 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 4,
   },
-  infoTextSmall: {
-    fontSize: 11,
-    color: "#999",
-    marginBottom: 4,
-  },
   infoHint: {
     fontSize: 11,
     color: "#999",
@@ -122,5 +101,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#999",
     marginLeft: 8,
+  },
+  warningContainer: {
+    backgroundColor: "#fef3c7",
+    padding: 8,
+    borderRadius: 6,
+    marginTop: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: "#f59e0b",
+  },
+  warningText: {
+    fontSize: 10,
+    color: "#92400e",
+    fontWeight: "600",
   },
 });
