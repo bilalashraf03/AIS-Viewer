@@ -1,4 +1,4 @@
-const { getDefaultConfig } = require('expo/metro-config');
+const { getDefaultConfig } = require("expo/metro-config");
 
 const config = getDefaultConfig(__dirname);
 
@@ -7,16 +7,16 @@ config.resolver = {
   ...config.resolver,
   resolveRequest: (context, moduleName, platform) => {
     // Ignore CSS imports and web-only modules for native platforms
-    if (platform !== 'web') {
+    if (platform !== "web") {
       if (
-        moduleName.endsWith('.css') ||
-        moduleName.includes('.css') ||
-        moduleName === 'mapbox-gl' ||
-        moduleName.startsWith('mapbox-gl/')
+        moduleName.endsWith(".css") ||
+        moduleName.includes(".css") ||
+        moduleName === "mapbox-gl" ||
+        moduleName.startsWith("mapbox-gl/")
       ) {
         // Return an empty module for CSS and mapbox-gl imports on native
         return {
-          type: 'empty',
+          type: "empty",
         };
       }
     }
