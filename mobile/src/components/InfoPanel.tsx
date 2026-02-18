@@ -21,15 +21,20 @@ export default function InfoPanel({
           ]}
         />
         <Text style={styles.statusText}>
-          {`Vessels: ${vesselCount}, Tiles: ${subscribedTiles} 🔍 ${currentZoom.toFixed(1)}`}
+          Vessels: {vesselCount} | Tiles: {subscribedTiles} | Zoom:{" "}
+          {currentZoom.toFixed(1)}
         </Text>
       </View>
+      <Text style={styles.legendText}>
+        <Text style={styles.legendGreen}>●</Text> Moving (SOG &gt; 0.5 kn)
+        <Text style={styles.legendRed}>●</Text> Stationary (SOG ≤ 0.5 kn)
+      </Text>
       <Text style={styles.infoText}>Last Update: {lastUpdate}</Text>
 
       {currentZoom < MIN_ZOOM_FOR_VESSELS && (
         <View style={styles.warningContainer}>
           <Text style={styles.warningText}>
-            ⚠️ Zoom (to {MIN_ZOOM_FOR_VESSELS}) in to load vessels
+            Zoom in to level {MIN_ZOOM_FOR_VESSELS} to load vessels
           </Text>
         </View>
       )}
@@ -84,7 +89,20 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 13,
     color: "#666",
+    marginBottom: 2,
+  },
+  legendText: {
+    fontSize: 11,
+    color: "#666",
     marginBottom: 4,
+  },
+  legendGreen: {
+    color: "#22c55e",
+    fontSize: 14,
+  },
+  legendRed: {
+    color: "#ef4444",
+    fontSize: 14,
   },
   infoHint: {
     fontSize: 11,
