@@ -1,0 +1,119 @@
+services:
+  # PostgreSQL with PostGIS extension
+  postgres:
+    image: postgis/postgis:15-3.3
+    container_name: ais-postgres
+    environment:
+      POSTGRES_DB: aisviewer
+      POSTGRES_USER: aisuser
+      POSTGRES_PASSWORD: aispass
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aisuser -d aisviewer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ais-network
+    restart: unless-stopped
+
+  # Redis with LRU eviction policy
+  redis:
+    image: redis:7-alpine
+    container_name: ais-redis
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --save ""
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - ais-network
+    restart: unless-stopped
+
+  # Backend API service
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: ais-backend
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      WS_PORT: 3001
+      LOG_LEVEL: debug
+
+      # AISStream configuration
+      AISSTREAM_API_KEY: ${AISSTREAM_API_KEY}
+      AISSTREAM_BBOX: ${AISSTREAM_BBOX:-}
+
+      # Redis configuration
+      REDIS_URL: redis://redis:6379
+      REDIS_MAX_MEMORY: 512mb
+
+      # PostgreSQL configuration
+      POSTGRES_URL: postgresql://aisuser:aispass@postgres:5432/aisviewer
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: aisviewer
+      POSTGRES_USER: aisuser
+      POSTGRES_PASSWORD: aispass
+      POSTGRES_MAX_CONNECTIONS: 20
+
+      # Application settings
+      TILE_ZOOM: 12
+      FRESHNESS_SECONDS: 120
+      VESSEL_TTL_SECONDS: 120
+
+      # Batch sync configuration
+      BATCH_SYNC_INTERVAL_MS: 5000
+      BATCH_SYNC_SIZE: 1000
+
+      # Monitoring
+      ENABLE_METRICS: true
+    ports:
+      - "3002:3000"
+      - "3003:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ais-network
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+# Named volumes for data persistence
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+
+# Custom network for service communication
+networks:
+  ais-network:
+    driver: bridge
