@@ -64,7 +64,6 @@ export default function VesselMarker({
   // Color: green if moving (SOG > 0.5 knots), red if stationary
   const color = vessel.sog != null && vessel.sog > 0.5 ? "#22c55e" : "#ef4444";
 
-  // Animate position changes using requestAnimationFrame (like HTML version)
   useEffect(() => {
     const newLat = vessel.lat;
     const newLon = vessel.lon;
